@@ -46,7 +46,7 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpC
         // Staking Node Keys
         PublicKey stakeVkey = stakeNode.PublicKey;
 
-        _address = AddressUtility.GetBaseAddress(vkey, stakeVkey, NetworkType.Preview).ToString();
+        _address = AddressUtility.GetBaseAddress(vkey, stakeVkey, Utils.GetNetworkType(configuration)).ToString();
 
         _logger.LogInformation("Address: {address}", _address);
 

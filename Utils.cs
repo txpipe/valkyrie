@@ -11,6 +11,7 @@ using CardanoSharp.Wallet.Models.Transactions;
 using CardanoSharp.Wallet.TransactionBuilding;
 using CardanoSharp.Wallet.Utilities;
 using CardanoSharp.Wallet.CIPs.CIP2.Extensions;
+using CardanoSharp.Wallet.Enums;
 
 namespace Valkyrie;
 public static class Utils
@@ -165,5 +166,16 @@ public static class Utils
                 .ToList();
         }
         return utxo;
+    }
+
+    public static NetworkType GetNetworkType(IConfiguration configuration)
+    {
+        return configuration.GetValue<int>("CardanoNetwork") switch
+        {
+            764824073 => NetworkType.Mainnet,
+            1 => NetworkType.Preprod,
+            2 => NetworkType.Preview,
+            _ => throw new NotImplementedException()
+        };
     }
 }
