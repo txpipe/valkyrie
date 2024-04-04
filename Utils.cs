@@ -175,6 +175,7 @@ public static class Utils
             764824073 => NetworkType.Mainnet,
             1 => NetworkType.Preprod,
             2 => NetworkType.Preview,
+            1177 => NetworkType.Preview,
             _ => throw new NotImplementedException()
         };
     }

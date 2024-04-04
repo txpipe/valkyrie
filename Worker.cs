@@ -18,9 +18,12 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpC
     private HttpClient SubmitApi => httpClientFactory.CreateClient("SubmitApi");
     private readonly string _targetAddress = configuration["TargetAddress"]!;
     private string _address = default!;
+    private readonly CardanoNodeClient _client = new();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await _client.ConnectAsync(configuration["CardanoNodeSocketPath"]!, configuration.GetValue<uint>("CardanoNetwork"));
+
         MnemonicService mnemonicService = new();
         Mnemonic mnemonic = mnemonicService.Restore(configuration["Mnemonic"]!);
         PrivateKey rootKey = mnemonic.GetRootKey();
@@ -106,9 +109,7 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpC
     {
         try
         {
-            CardanoNodeClient client = new();
-            await client.ConnectAsync(configuration["CardanoNodeSocketPath"]!, configuration.GetValue<uint>("CardanoNetwork"));
-            var utxosByAddress = await client.GetUtxosByAddressAsync(_address);
+            var utxosByAddress = await _client.GetUtxosByAddressAsync(_address);
             Utxos = utxosByAddress.Values.Select(uba => Utils.MapUtxoByAddressToUtxo(uba.Key.Value, uba.Value.Value)).ToList();
         }
         catch (Exception ex)
