@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Cardano.Sync;
 using CardanoSharp.Wallet;
 using CardanoSharp.Wallet.Enums;
@@ -30,7 +31,7 @@ public class Worker(
     {
         _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
         statsService.StartTime = DateTimeOffset.Now;
-        
+
         await _client.ConnectAsync(configuration["CardanoNodeSocketPath"]!, configuration.GetValue<uint>("CardanoNetwork"));
 
         MnemonicService mnemonicService = new();
@@ -66,6 +67,8 @@ public class Worker(
         await UpdateUtxosAsync();
 
         int retry = 0;
+        long maxDelay = 1000 / configuration.GetValue<long>("TargetTxPerSecond");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             // If mempool is not full, send a transaction && utxos is not null
@@ -73,6 +76,8 @@ public class Worker(
             {
                 try
                 {
+                    Stopwatch sw = new();
+                    sw.Start();
                     var (txBytes, txHash, consumedUtxos, changeUtxos) = Utils.BuildTx(
                         _address,
                         vkey,
@@ -98,6 +103,15 @@ public class Worker(
                     Utxos = Utxos.Except(consumedUtxos).Concat(changeUtxos).ToList();
                     statsService.TotalSubmittedTx++;
                     retry = 0;
+                    sw.Stop();
+
+                    long delayLeft = maxDelay - sw.ElapsedMilliseconds;
+                    if (delayLeft > 0)
+                    {
+                        await Task.Delay((int)delayLeft, stoppingToken);
+                    }
+                    _logger.LogInformation("Tx Building Elapsed Time: {elapsedTime} ms", sw.ElapsedMilliseconds);
+                    _logger.LogInformation("Delay Left: {delayLeft} ms", delayLeft);
                 }
                 catch (Exception ex)
                 {
@@ -109,7 +123,7 @@ public class Worker(
                         retry = 0;
                     }
                     // Wait for a while before trying again
-                    await Task.Delay(1000, stoppingToken);
+                    await Task.Delay(100, stoppingToken);
                 }
             }
         }
