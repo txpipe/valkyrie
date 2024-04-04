@@ -1,0 +1,6 @@
+@Valkyrie_HostAddress = http://localhost:5277
+
+GET {{Valkyrie_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,4 +1,3 @@
-
 using CardanoSharp.Wallet.CIPs.CIP2;
 using CardanoSharp.Wallet.CIPs.CIP2.ChangeCreationStrategies;
 using CardanoSharp.Wallet.CIPs.CIP2.Models;
