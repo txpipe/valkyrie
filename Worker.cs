@@ -8,10 +8,16 @@ using CardanoSharp.Wallet.Models.Addresses;
 using CardanoSharp.Wallet.Models.Derivations;
 using CardanoSharp.Wallet.Models.Keys;
 using CardanoSharp.Wallet.Utilities;
+using Valkyrie.Services;
 
 namespace Valkyrie;
 
-public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpClientFactory httpClientFactory) : BackgroundService
+public class Worker(
+    ILogger<Worker> logger,
+    IConfiguration configuration,
+    IHttpClientFactory httpClientFactory,
+    StatsService statsService
+) : BackgroundService
 {
     private readonly ILogger<Worker> _logger = logger;
     private List<Utxo>? Utxos { get; set; }
@@ -22,6 +28,9 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpC
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+        statsService.StartTime = DateTimeOffset.Now;
+        
         await _client.ConnectAsync(configuration["CardanoNodeSocketPath"]!, configuration.GetValue<uint>("CardanoNetwork"));
 
         MnemonicService mnemonicService = new();
@@ -87,6 +96,7 @@ public class Worker(ILogger<Worker> logger, IConfiguration configuration, IHttpC
                     _logger.LogInformation("Transaction submitted: {txHash}", txHash);
                     // If transaction is successful, update utxos
                     Utxos = Utxos.Except(consumedUtxos).Concat(changeUtxos).ToList();
+                    statsService.TotalSubmittedTx++;
                     retry = 0;
                 }
                 catch (Exception ex)

@@ -1,4 +1,5 @@
 using Valkyrie;
+using Valkyrie.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.Services.AddHttpClient("SubmitApi", client =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<StatsService>();
 
 var app = builder.Build();
 
@@ -36,19 +38,17 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/stats", (StatsService statsService) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    var currentTime = DateTimeOffset.Now;
+    var uptime = currentTime - statsService.StartTime;
+    return new { 
+        statsService.TotalSubmittedTx,
+        statsService.StartTime,
+        Uptime = uptime
+    };
 })
-.WithName("GetWeatherForecast")
+.WithName("GetStats")
 .WithOpenApi();
 
 app.Run();
